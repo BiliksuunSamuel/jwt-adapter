@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using JwtAdapter.Options;
@@ -106,6 +107,41 @@ public static class ServiceCollectionExtensions
         return services;
     }
     
+    /// <summary>
+    /// Generate SignIn Token For Application
+    /// </summary>
+    /// <param name="bearerTokenConfig"></param>
+    /// <param name="identityId"></param>
+    /// <param name="identityData"></param>
+    /// <param name="expires"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static async Task<string> GenerateToken<T>(this BearerTokenConfig bearerTokenConfig, string identityId, T identityData,DateTime?expires)
+    {
+        var symmetricKey = Encoding.ASCII.GetBytes(bearerTokenConfig.SigningKey!);
+        var now = DateTime.UtcNow;
+
+
+        var claims = new List<Claim>()
+        {
+            new Claim(ClaimTypes.NameIdentifier, identityId),
+            new Claim(ClaimTypes.MobilePhone, identityId),
+            new Claim(ClaimTypes.Thumbprint, identityData!.ToJsonString())
+        };
+
+        var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey),
+            SecurityAlgorithms.HmacSha256Signature);
+
+        var jwt = new JwtSecurityToken(
+            issuer: bearerTokenConfig.Issuer,
+            audience: bearerTokenConfig.Audience,
+            expires: expires??now.AddHours(Convert.ToInt32(24)),
+            signingCredentials: signingCredentials,
+            claims: claims
+        );
+        await Task.Delay(0);
+        return new JwtSecurityTokenHandler().WriteToken(jwt);
+    }
     
     /// <summary>
     /// Get the claims data from the principal
