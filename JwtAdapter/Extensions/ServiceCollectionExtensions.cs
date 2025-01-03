@@ -9,19 +9,17 @@ namespace JwtAdapter.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection EnableAuthentication(
+    public static IServiceCollection EnableAuthentication<T>(
         this IServiceCollection services,
         Action<BearerTokenConfig> bearerTokenConfigAction,
-        Func<string, Task<(bool isSuccessful, string? message)>> validationFunction,
+        Func<string, Task<IdentityValidationResults<T>>> validationFunction,
         bool validateLifeTime = true)
     {
-
 
         if (bearerTokenConfigAction == null)
         {
             throw new ArgumentNullException(nameof(bearerTokenConfigAction));
         }
-
 
         var bearerConfig = new BearerTokenConfig();
         bearerTokenConfigAction.Invoke(bearerConfig);
@@ -51,22 +49,22 @@ public static class ServiceCollectionExtensions
                     OnTokenValidated = async (ctx) =>
                     {
                         var id = ctx.Principal!.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                        var (isSuccessful, message) = await validationFunction(id!);
+                        var results = await validationFunction(id!);
                         
                         var bearerAuth = ctx.HttpContext.Request.Headers["Authorization"][0]!.Split(new[] { ' ' })[1];
 
-                        if (!isSuccessful)
+                        if (!results.IsSuccessful)
                         {
-                            ctx.Fail(message ?? "Failed Error");
+                            ctx.Fail(results.Message ?? "Validation failed");
                             return;
                         }
 
                         var claims = new List<Claim>
                         {
-                            new Claim("AuthData", id!),
+                            new Claim(ClaimTypes.Thumbprint, results.IdentityData!.ToJsonString()),
                             new Claim(ClaimTypes.Authentication, bearerAuth)
                         };
-                        var appIdentity = new ClaimsIdentity(claims, "JwtAuthentication");
+                        var appIdentity = new ClaimsIdentity(claims, "AuthData");
                         ctx.Principal?.AddIdentity(appIdentity);
                     }
                 };
