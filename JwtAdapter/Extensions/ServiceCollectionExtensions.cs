@@ -4,6 +4,7 @@ using JwtAdapter.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+// ReSharper disable All
 
 namespace JwtAdapter.Extensions;
 
@@ -19,6 +20,10 @@ public static class ServiceCollectionExtensions
         if (bearerTokenConfigAction == null)
         {
             throw new ArgumentNullException(nameof(bearerTokenConfigAction));
+        }
+        if (validationFunction == null)
+        {
+            throw new ArgumentNullException(nameof(validationFunction));
         }
 
         var bearerConfig = new BearerTokenConfig();
@@ -44,26 +49,43 @@ public static class ServiceCollectionExtensions
                     ValidateAudience = true,
                     ValidateLifetime = validateLifeTime
                 };
-                x.Events = new JwtBearerEvents()
+                x.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = async (ctx) =>
+                    OnTokenValidated = async ctx =>
                     {
-                        var id = ctx.Principal!.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                        var results = await validationFunction(id!);
-                        
-                        var bearerAuth = ctx.HttpContext.Request.Headers["Authorization"][0]!.Split(new[] { ' ' })[1];
+                        var id = ctx.Principal?.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-                        if (!results.IsSuccessful)
+                        if (string.IsNullOrWhiteSpace(id))
                         {
-                            ctx.Fail(results.Message ?? "Validation failed");
+                            ctx.Fail("Invalid token: missing user identifier.");
                             return;
                         }
 
+                        var results = await validationFunction(id);
+
+                        if (!results.IsSuccessful)
+                        {
+                            ctx.Fail(results.Message ?? "Validation failed.");
+                            return;
+                        }
+
+                        // Ensure Authorization header is valid
+                        if (!ctx.HttpContext.Request.Headers.TryGetValue("Authorization", out var authHeader) ||
+                            !authHeader[0]!.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ctx.Fail("Invalid Authorization header.");
+                            return;
+                        }
+
+                        var bearerAuth = authHeader[0]!.Substring("Bearer ".Length);
+
+                        // Add custom claims
                         var claims = new List<Claim>
                         {
-                            new Claim(ClaimTypes.Thumbprint, results.IdentityData!.ToJsonString()),
+                            new Claim(ClaimTypes.Thumbprint, results.IdentityData?.ToJsonString() ?? string.Empty),
                             new Claim(ClaimTypes.Authentication, bearerAuth)
                         };
+
                         var appIdentity = new ClaimsIdentity(claims, "AuthData");
                         ctx.Principal?.AddIdentity(appIdentity);
                     }
