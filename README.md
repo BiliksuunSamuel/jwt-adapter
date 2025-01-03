@@ -146,6 +146,19 @@ public void ConfigureServices(IServiceCollection services)
     }
 ```
 
+### Enable Authentication and Authorization Middleware
+```csharp
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization(); // the UseAuthorization Middleware must come between the UseRouring and UseEndpoints Middleware
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+```
+
+
 ### Controller Usage
 ```csharp
 
