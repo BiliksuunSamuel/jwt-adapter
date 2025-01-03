@@ -10,6 +10,17 @@ namespace JwtAdapter.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    
+    /// <summary>
+    /// Enable authentication for the application
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="bearerTokenConfigAction"></param>
+    /// <param name="validationFunction"></param>
+    /// <param name="validateLifeTime"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static IServiceCollection EnableAuthentication<T>(
         this IServiceCollection services,
         Action<BearerTokenConfig> bearerTokenConfigAction,
@@ -94,4 +105,24 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+    
+    
+    /// <summary>
+    /// Get the claims data from the principal
+    /// </summary>
+    /// <param name="principal"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static T GetClaimsAuthData<T>(this ClaimsPrincipal principal)
+    {
+        var claimsIdentity = principal.Identities.FirstOrDefault();
+        var claim = claimsIdentity?.FindFirst(ClaimTypes.Thumbprint);
+        var auth = claimsIdentity?.FindFirst(ClaimTypes.Authentication);
+
+        if (claim == null)
+            return default!;
+        var user = claim.Value.FromJsonString<T>();
+        return user!;
+    }
+
 }
