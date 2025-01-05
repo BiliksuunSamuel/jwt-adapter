@@ -158,6 +158,17 @@ app.UseEndpoints(endpoints =>
 
 ```
 
+### Add BearTokenConfig to appsettings
+```json
+{
+  "BearerTokenConfig": {
+    "Issuer": "https://easecoreapi:com",
+    "Audience": "https://easycoreapi:com",
+    "SigningKey": "easycoreapi889945"
+  }
+}
+```
+
 
 ### Controller Usage
 ```csharp
