@@ -187,7 +187,7 @@ public class SecureController : ControllerBase
 ```
 
 ## Requirements
-- .NET 6.0 or later
+- .NET 6.0 or .Net 8.0
 - Compatible with ASP.NET Core applications.
 
 ## Contributing
