@@ -116,7 +116,7 @@ public static class ServiceCollectionExtensions
     /// <param name="expires"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static async Task<string> GenerateToken<T>(this BearerTokenConfig bearerTokenConfig, string identityId, T identityData,DateTime?expires)
+    public static async Task<string> GenerateToken<T>(this T identityData, BearerTokenConfig bearerTokenConfig, string identityId,DateTime?expires)
     {
         var symmetricKey = Encoding.ASCII.GetBytes(bearerTokenConfig.SigningKey!);
         var now = DateTime.UtcNow;
