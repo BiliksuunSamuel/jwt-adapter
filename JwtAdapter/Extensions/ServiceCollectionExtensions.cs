@@ -132,7 +132,14 @@ public static class ServiceCollectionExtensions
         
         if (extraClaims != null&&extraClaims.Count>0)
         {
-            claims.AddRange(extraClaims);
+            //add only unique claims
+            foreach (var claim in extraClaims)
+            {
+                if (claims.All(x => x.Type != claim.Type))
+                {
+                    claims.Add(claim);
+                }
+            }
         }
 
         var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey),
