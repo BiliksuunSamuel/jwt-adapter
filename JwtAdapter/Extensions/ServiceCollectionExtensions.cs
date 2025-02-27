@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     /// <summary>
     /// Generate SignIn Token For Application
     /// </summary>
@@ -116,7 +116,8 @@ public static class ServiceCollectionExtensions
     /// <param name="expires"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static async Task<string> GenerateToken<T>(this T identityData, BearerTokenConfig bearerTokenConfig, string identityId,DateTime?expires)
+    public static async Task<string> GenerateToken<T>(this T identityData, BearerTokenConfig bearerTokenConfig,
+        string identityId, DateTime? expires, List<Claim>extraClaims = null)
     {
         var symmetricKey = Encoding.ASCII.GetBytes(bearerTokenConfig.SigningKey!);
         var now = DateTime.UtcNow;
@@ -126,8 +127,13 @@ public static class ServiceCollectionExtensions
         {
             new Claim(ClaimTypes.NameIdentifier, identityId),
             new Claim(ClaimTypes.MobilePhone, identityId),
-            new Claim(ClaimTypes.Thumbprint, identityData!.ToJsonString())
+            new Claim(ClaimTypes.Thumbprint, identityData!.ToJsonString()),
         };
+        
+        if (extraClaims != null&&extraClaims.Count>0)
+        {
+            claims.AddRange(extraClaims);
+        }
 
         var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey),
             SecurityAlgorithms.HmacSha256Signature);
@@ -135,14 +141,14 @@ public static class ServiceCollectionExtensions
         var jwt = new JwtSecurityToken(
             issuer: bearerTokenConfig.Issuer,
             audience: bearerTokenConfig.Audience,
-            expires: expires??now.AddHours(Convert.ToInt32(24)),
+            expires: expires ?? now.AddHours(Convert.ToInt32(24)),
             signingCredentials: signingCredentials,
             claims: claims
         );
         await Task.Delay(0);
         return new JwtSecurityTokenHandler().WriteToken(jwt);
     }
-    
+
     /// <summary>
     /// Get the claims data from the principal
     /// </summary>
