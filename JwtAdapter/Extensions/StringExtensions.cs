@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Scrypt;
 
 namespace JwtAdapter.Extensions;
 
@@ -25,5 +26,30 @@ public static class StringExtensions
     public static T? FromJsonString<T>(this string json)
     {
         return JsonConvert.DeserializeObject<T>(json);
+    }
+    
+    
+    /// <summary>
+    /// Method for encrypting password
+    /// </summary>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    public static string HashPassword(this string password)
+    {
+        var encoder = new ScryptEncoder();
+        return encoder.Encode(password);
+    }
+    
+    
+    /// <summary>
+    /// Method for comparing hashed password to raw password
+    /// </summary>
+    /// <param name="password"></param>
+    /// <param name="hashedPassword"></param>
+    /// <returns></returns>
+    public static bool ComparePassword(this string password, string hashedPassword)
+    {
+        var encoder = new ScryptEncoder();
+        return encoder.Compare(password, hashedPassword);
     }
 }
