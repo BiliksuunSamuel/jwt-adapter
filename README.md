@@ -90,6 +90,17 @@ services.EnableAuthentication<UserIdentity>(
     validateLifeTime: false
 );
 ```
+4. Hash and Compare Passwords
+```csharp
+
+    //hash password
+  var rawPassword="password";
+  var hashedPassword=rawPassword.HashPassword();
+  
+  //compare password
+  var isMatch=rawPassword.ComparePassword(hashedPassword);
+      
+```
 
 ## Custom Error Messages
 ### Provide detailed error messages when validation fails:
@@ -115,7 +126,7 @@ public void ConfigureServices(IServiceCollection services)
             config.Audience = "MyAudience";
             config.SigningKey = "MySecretKey";
         },
-        async id =>
+        async (id,claims) =>
         {
             // Perform custom validation
             return await ValidateUserAsync(id);
